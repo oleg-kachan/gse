@@ -15,6 +15,43 @@ from pymanopt.manifolds import Euclidean, Rotations
 from pymanopt.solvers import TrustRegions, SteepestDescent, ConjugateGradient
 
 class GSE():
+
+    """Grassmann-Stiefel Eigenmaps (GSE)
+
+    Parameters
+    ----------
+    n_components : integer
+        Number of coordinates for the manifold
+
+    solver : string ['base'|'graph'|'stiefel']
+        Solver for tangent spaces alignment subproblem.
+
+        'base' : contraction mappings,
+        'stiefel' : optimization on orthogonal group.
+
+    neighborhood_method : string ['knn', 'eps_ball']
+
+    k : integer
+        k nearest neighbors, if 'knn' neighborhood_method is selected
+
+    eps : float
+        \eps of open ball of neighborhood, if 'eps_ball'
+        neighborhood_method is selected
+
+    max_iter : integer
+        Maximum number of iterations, if 'base' solver is selected
+
+    tol : float
+        Convergence tolerance, if 'base' solver is selected
+
+    neighbors_algorithm : string ['auto'|'brute'|'kd_tree'|'ball_tree']
+        Algorithm to use for nearest neighbors search,
+        passed to neighbors.NearestNeighbors instance.
+
+    n_jobs : int, optional (default = 1)
+        The number of parallel jobs to run.
+        If ``-1``, then the number of jobs is set to the number of CPU cores.
+     """
     
     def __init__(self, n_components=2, n_neighbors=5, eps=None, sigma=1.0, solver="base", max_iter=100, tol=1e-6, neighborhood_method="knn", neighbors_algorithm="auto", metric="euclidean", weighted_pca=True, weighted_ls=True, n_jobs=1):
         self.n_components = n_components
