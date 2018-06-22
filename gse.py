@@ -1,7 +1,6 @@
 #import autograd.numpy as np
 import numpy as np
 from scipy import linalg
-
 from scipy.sparse import csr_matrix
 
 #from ..base import BaseEstimator, TransformerMixin
@@ -78,16 +77,18 @@ class GSE():
 
         if self.neighborhood_method == "knn":
             # TODO: assert n_neighbors < number of points
-            G = neighbors.kneighbors_graph(n_neighbors=self.n_neighbors, mode="distance")
+            G = neighbors.kneighbors_graph(n_neighbors=self.n_neighbors)
         elif self.neighborhood_method == "eps_ball":
             # TODO: assert eps is not None
             G = neighbors.radius_neighbors_graph(radius=self.eps, mode="distance")
         else:
             raise ValueError("Unrecognized method of neighborhood selection='{0}'""".format(self.neighborhood_method))
 
-        G.data = self._kernel(G.data, sigma=self.sigma)
+        G_sym  = csr_matrix.maximum(G, G.T.tocsr())
 
-        return G
+        G_sym.data = self._kernel(G_sym.data, sigma=self.sigma)
+
+        return G_sym
 
     def _estimate_Q(self, X, G, oriented=True, weighted_pca=True):
         """Estimation of tangent space Q(X_i) at each point X_i."""
