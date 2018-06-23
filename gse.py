@@ -2,6 +2,7 @@
 import numpy as np
 from scipy import linalg
 from scipy.sparse import csr_matrix
+from scipy.spatial.distance import pdist, squareform
 
 #from ..base import BaseEstimator, TransformerMixin
 from sklearn.neighbors import NearestNeighbors, kneighbors_graph
@@ -302,10 +303,32 @@ class GSE():
     def _kernel(self, X, L=None, sigma=1):
         return np.exp(- X ** 2 / (2 * sigma ** 2))
 
+    def _kernel_euclinean(self, X, L=None, sigma=1):
+        return np.exp(- X ** 2 / (2 * sigma ** 2))
+
+    def _kernel_grassmannian(self, X):
+
+        N, D, d = self.Q.shape[0], self.Q.shape[1], self.n_components
+
+        def det2(Q_i, Q_j):
+            Q_i = Q_i.reshape(D, d)
+            Q_j = Q_j.reshape(D, d)
+            return np.linalg.det(Q_i.T.dot(Q_j)) ** 2
+
+        return squareform(pdist(self.Q.reshape(N, -1), metric=det2))
+
+    def _kernel_aggregate(self, X):
+        pass
+
     def fit(self, X, y=None, embed=True):
         self.X = X
         self.G = self._build_graph(X)
         self.Q = self._estimate_Q(X, self.G, weighted_pca=self.weighted_pca)
+
+        K_g = self._kernel_grassmannian(X)
+        K_agg = np.multiply(self.G.A, K_g)
+        self.G.data = csr_matrix(K_agg).data
+
         self.H = self._align_H(self.Q, self.G)
 
         return self.Q, self.H, self.G
