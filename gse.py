@@ -21,18 +21,20 @@ class GSE():
     Parameters
     ----------
     n_components : integer
-        Number of coordinates for the manifold
+        Number of coordinates for the manifold.
 
-    solver : string ['base'|'graph'|'stiefel']
+    n_neighbors : integer
+        Number of k nearest neighbors, if 'knn' neighborhood_method is selected.
+
+    sigma : float
+        \sigma of Gaussian kernel, while computing points' similarity.
+
+    solver : string ['base'|'eig'|'stiefel']
         Solver for tangent spaces alignment subproblem.
 
-        'base' : contraction mappings,
+        'base' : contraction mapping,
+        'eig' : generalized eigenvalue problem,
         'stiefel' : optimization on orthogonal group.
-
-    neighborhood_method : string ['knn', 'eps_ball']
-
-    k : integer
-        k nearest neighbors, if 'knn' neighborhood_method is selected
 
     eps : float
         \eps of open ball of neighborhood, if 'eps_ball'
@@ -44,9 +46,26 @@ class GSE():
     tol : float
         Convergence tolerance, if 'base' solver is selected
 
+    neighborhood_method : string ['knn', 'eps_ball']
+        Method for selecting neighborhoods of points.
+
+        'knn' : k nearest neighbors
+        'eps_ball' : epsilon-ball with radius \eps
+
     neighbors_algorithm : string ['auto'|'brute'|'kd_tree'|'ball_tree']
         Algorithm to use for nearest neighbors search,
         passed to neighbors.NearestNeighbors instance.
+
+    metric : string, precomputed or callable
+        Metric for finding nearest neighbors.
+
+    weighted_pca : bool
+        Whether to perform weighted version of PCA,
+        while estimating tangent spaces.
+
+    weighted_ls: bool
+        Whether to perform weighted version of least squares problem,
+        while computing embedding.
 
     n_jobs : int, optional (default = 1)
         The number of parallel jobs to run.
@@ -72,7 +91,7 @@ class GSE():
         self.G = None
 
     def _build_graph(self, X):
-        """Contruction of connectivity graph G"""
+        """Construction of connectivity graph G"""
 
         neighbors = NearestNeighbors(algorithm=self.neighbors_algorithm, metric=self.metric, n_jobs=self.n_jobs).fit(X)
 
@@ -143,6 +162,10 @@ class GSE():
             return self._align_H_stiefel(Q, G)
         else:
             raise ValueError("Unrecognized solver='{0}'""".format(self.solver))
+
+    def _align_H_eig(self, Q, G):
+        """Tangent vector field alignment via solution of eigenvalue problem."""
+        pass
 
     def _align_H_base(self, Q, G):
         """Tangent vector field alignment via contraction mappings."""
