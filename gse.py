@@ -67,12 +67,15 @@ class GSE():
         Whether to perform weighted version of least squares problem,
         while computing embedding.
 
+    oriented: bool
+        Whether to orient tangent spaces on manifold.
+
     n_jobs : int, optional (default = 1)
         The number of parallel jobs to run.
         If ``-1``, then the number of jobs is set to the number of CPU cores.
      """
     
-    def __init__(self, n_components=2, n_neighbors=5, eps=None, sigma=1.0, solver="base", max_iter=100, tol=1e-6, neighborhood_method="knn", neighbors_algorithm="auto", metric="euclidean", weighted_pca=True, weighted_ls=True, n_jobs=1):
+    def __init__(self, n_components=2, n_neighbors=5, eps=None, sigma=1.0, solver="base", max_iter=100, tol=1e-6, neighborhood_method="knn", neighbors_algorithm="auto", metric="euclidean", weighted_pca=True, weighted_ls=True, oriented=True, n_jobs=1):
         self.n_components = n_components
         self.n_neighbors = n_neighbors
         self.eps = eps
@@ -85,6 +88,7 @@ class GSE():
         self.metric = metric
         self.weighted_pca = weighted_pca
         self.weighted_ls = weighted_ls
+        self.oriented = oriented
         self.n_jobs = n_jobs
 
         self.H = None
@@ -112,7 +116,7 @@ class GSE():
 
         return G_sym
 
-    def _estimate_Q(self, X, G, oriented=True, weighted_pca=True):
+    def _estimate_Q(self, X, G, weighted_pca=True, oriented=True):
         """Estimation of tangent space Q(X_i) at each point X_i."""
 
         (N, D), d = X.shape, self.n_components
@@ -346,7 +350,7 @@ class GSE():
     def fit(self, X, y=None, embed=True):
         self.X = X
         self.G = self._build_graph(X)
-        self.Q = self._estimate_Q(X, self.G, weighted_pca=self.weighted_pca)
+        self.Q = self._estimate_Q(X, self.G, weighted_pca=self.weighted_pca, oriented=self.oriented)
 
         K_g = self._kernel_grassmannian(X)
         K_agg = np.multiply(self.G.A, K_g)
