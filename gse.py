@@ -77,7 +77,7 @@ class GSE():
 
         if self.neighborhood_method == "knn":
             # TODO: assert n_neighbors < number of points
-            G = neighbors.kneighbors_graph(n_neighbors=self.n_neighbors)
+            G = neighbors.kneighbors_graph(n_neighbors=self.n_neighbors, mode="distance")
         elif self.neighborhood_method == "eps_ball":
             # TODO: assert eps is not None
             G = neighbors.radius_neighbors_graph(radius=self.eps, mode="distance")
@@ -87,6 +87,8 @@ class GSE():
         G_sym  = csr_matrix.maximum(G, G.T.tocsr())
 
         G_sym.data = self._kernel(G_sym.data, sigma=self.sigma)
+
+        G.data = self._kernel(G.data, sigma=self.sigma)
 
         return G_sym
 
@@ -204,16 +206,16 @@ class GSE():
         indices = self.G.indices
         K = self.G.data
 
-        # build vector x
-        x = np.zeros((N*k, D))
+        # build vector x: k * N x D
+        x = np.zeros((K.shape[0], D))
 
         for i in range(X.shape[0]):
-            x[i*k:(i+1)*k, :] = X[indices[indptr[i]:indptr[i+1]]] - X[i]
+            x[indptr[i]:indptr[i+1], :] = X[indices[indptr[i]:indptr[i+1]]] - X[i]
                 
         x = x.reshape(-1, 1)
 
-        # build matrix A
-        A = np.zeros((k*N*D, d * (N-1)))
+        # build matrix A: k * N * D x D * (N-1)
+        A = np.zeros((K.shape[0] * D, d * (N-1)))
 
         for i in range(N):
     
@@ -221,7 +223,9 @@ class GSE():
                 
                 K_ij = np.sqrt(K_ij)
                 
-                i_a, i_a_to = idx*D + (i*k*D), idx*D + (i*k*D+D)
+                # i_a, i_a_to: idx*D + (i*k*D), idx*D + (i*k*D+D)
+                i_a, i_a_to = idx*D + (indptr[i]*D), idx*D + (indptr[i]*D+D)
+
                 ji_a, ji_a_to = i*d, i*d+d
                 jj_a, jj_a_to = j*d, j*d+d
             
